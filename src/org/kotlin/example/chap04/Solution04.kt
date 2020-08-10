@@ -2,6 +2,7 @@ package org.kotlin.example.chap04
 
 import java.lang.IllegalArgumentException
 import java.math.BigInteger
+import java.util.stream.Stream
 
 fun main() {
     val solution = Solution()
@@ -20,6 +21,10 @@ fun main() {
     println(tailRecSolution.sum(listOf(1,2,3,4,5)))
     println(tailRecSolution.makeString(listOf("a", "b", "c"), ":"))
     println(tailRecSolution.toString(listOf('a', 'b', 'c')))
+
+    println(tailRecSolution.reverse(listOf('a', 'b', 'c')))
+
+    println(tailRecSolution.range(0, 5))
 }
 
 fun <T> List<T>.head(): T =
@@ -104,13 +109,14 @@ class TailRecSolution {
             if (list.isEmpty()) acc
             else foldLeft(list.tail(), f(acc, list.head()))
         return foldLeft(list, z)
-    }
 
-    fun sum(list: List<Int>) = foldLeft(list, 0, Int::plus)
+    }
 
     fun makeString(list: List<String>, delim: String): String {
         return foldLeft(list, "", { s, t -> if(s.isEmpty()) t else "$s$delim$t"} )
     }
+
+    fun sum(list: List<Int>) = foldLeft(list, 0, Int::plus)
 
     private fun <T, U> foldRight(list: List<T>, identity: U, f: (T, U) -> U): U =
         if (list.isEmpty()) identity
@@ -121,5 +127,59 @@ class TailRecSolution {
     private fun prepend(c: Char, s: String): String {
         println(c)
         return s + c
+    }
+
+    private fun <T> prepend(list: List<T>, elem: T): List<T> = listOf(elem) + list
+
+    fun <T> reverse(list: List<T>): List<T> = foldLeft(list, listOf(), ::prepend)
+
+//    fun range(start: Int, end: Int): List<Int> {
+//        val result = mutableListOf<Int>()
+//        var index = start
+//        while (index < end) {
+//            result.add(index)
+//            index++
+//        }
+//        return result
+//    }
+
+    private fun <T> unfold(seed: T, f: (T) -> T, p: (T) -> Boolean): List<T> {
+//        val result = mutableListOf<T>()
+//        var elem = seed
+//        while (p(elem)) {
+//            result.add(elem)
+//            elem = f(elem)
+//        } // iteration
+//        return result
+//        if (p(seed))
+//            prepend(unfold(f(seed), f, p), seed)
+//        else
+//            listOf() // recur
+        tailrec fun unfold(acc: List<T>, seed: T, f: (T) -> T, p: (T) -> Boolean): List<T> =
+            if (p(seed))
+                unfold(acc + seed, f(seed), f, p)
+            else
+                acc
+        return unfold(listOf(), seed, f, p) // tail recur
+    }
+
+    fun range(start: Int, end: Int): List<Int> = unfold(start, { it + 1}, { it < end})
+
+    fun <T> iterate(seed: T, f: (T) -> T, n: Int): List<T> {
+        tailrec fun iterate_(acc: List<T>, seed: T): List<T> =
+            if (acc.size < n)
+                iterate_(acc + seed, f(seed))
+            else
+                acc
+        return iterate_(listOf(), seed)
+    }
+
+    fun <T, U> map(list: List<T>, f: (T) -> U): List<U> {
+        tailrec fun map(acc: List<U>, list: List<T>): List<U> =
+            if (list.isEmpty())
+                acc
+            else
+                map(acc + f(list.head()), list.tail())
+        return map(listOf(), list)
     }
 }
